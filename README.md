@@ -9,7 +9,8 @@ JXL-AI 是一个基于 Node.js 的互动 Web 应用，提供 AI 聊天机器人�
 
 ## 网址
 
-[点击访问](https://tuoxie.asia)
+[点击访问](https://tuoxie.asia/)
+链接：https://tuoxie.asia/
 
 ## 功能特性
 
