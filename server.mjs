@@ -1,16 +1,26 @@
 import { createServer } from "node:http";
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import OpenAI from "openai";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+const appConfig = loadConfig();
+const serverConfig = appConfig.server || {};
+const aiConfig = {
+  ...(appConfig.openai || {}),
+  apiKey: process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY || appConfig.openai?.apiKey
+};
 const publicDir = path.join(root, "public");
 const dataDir = path.join(root, "data");
 const uploadsDir = path.join(publicDir, "uploads");
 const dbPath = path.join(dataDir, "app.db");
-const port = Number(process.env.PORT || 5178);
+const host = String(process.env.HOST || serverConfig.host || "127.0.0.1");
+const port = Number(process.env.PORT || serverConfig.port || 5178);
+const maxUploadBytes = Number(serverConfig.maxUploadBytes || 1024 * 1024 * 12);
+const maxChatBytes = Number(serverConfig.maxChatBytes || 128 * 1024);
 
 mkdirSync(dataDir, { recursive: true });
 mkdirSync(uploadsDir, { recursive: true });
@@ -54,6 +64,12 @@ const listScores = db.prepare(`
   LIMIT ?
 `);
 
+const getScoreByName = db.prepare(`
+  SELECT name, score, hits, misses, accuracy, updated_at
+  FROM scores
+  WHERE name = ?
+`);
+
 const addSubmission = db.prepare(`
   INSERT INTO submissions (title, filename, mime, created_at)
   VALUES (?, ?, ?, datetime('now', 'localtime'))
@@ -88,12 +104,39 @@ const mimeTypes = {
   ".ico": "image/x-icon"
 };
 
+const openaiClient = aiConfig.apiKey && !String(aiConfig.apiKey).includes("填入你的")
+  ? new OpenAI({
+    baseURL: aiConfig.baseURL || "https://api.deepseek.com",
+    apiKey: aiConfig.apiKey,
+    timeout: Number(aiConfig.timeout || 60000)
+  })
+  : null;
+
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || `localhost:${port}`}`);
 
     if (req.method === "GET" && url.pathname === "/api/scores") {
       sendJson(res, 200, { scores: listScores.all(20) });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/player") {
+      const name = String(url.searchParams.get("name") || "").trim().slice(0, 18);
+      if (!name) {
+        sendJson(res, 400, { error: "name_required" });
+        return;
+      }
+
+      const player = getScoreByName.get(name);
+      sendJson(res, 200, {
+        exists: Boolean(player),
+        player: player ? {
+          name: player.name,
+          score: player.score,
+          updated_at: player.updated_at
+        } : null
+      });
       return;
     }
 
@@ -130,18 +173,17 @@ const server = createServer(async (req, res) => {
 
     serveStatic(url.pathname, req, res);
   } catch (error) {
-    console.error(error);
-    sendJson(res, 500, { error: "server_error", detail: error.message });
+    handleError(res, error);
   }
 });
 
-server.listen(port, () => {
-  console.log(`AI佳小乐整合项目已启动: http://localhost:${port}`);
+server.listen(port, host, () => {
+  console.log(`AI佳小乐整合项目已启动: http://${host}:${port}`);
 });
 
 async function handleScore(req, res) {
   const raw = await readBody(req, 1024 * 32);
-  const data = JSON.parse(raw.toString("utf8") || "{}");
+  const data = parseJson(raw);
   const name = String(data.name || "").trim().slice(0, 18);
   const score = Math.max(0, Math.floor(Number(data.score) || 0));
   const hits = Math.max(0, Math.floor(Number(data.hits) || 0));
@@ -158,7 +200,7 @@ async function handleScore(req, res) {
 }
 
 async function handleSubmission(req, res) {
-  const raw = await readBody(req, 1024 * 1024 * 12);
+  const raw = await readBody(req, maxUploadBytes);
   const file = parseMultipart(raw, req.headers["content-type"]);
   const ext = extensionForMime(file.mime);
 
@@ -172,7 +214,7 @@ async function handleSubmission(req, res) {
     return;
   }
 
-  const filename = `${Date.now()}-${Math.random().toString(16).slice(2)}${ext}`;
+  const filename = `${Date.now()}-${randomUUID()}${ext}`;
   const titleBase = path.basename(file.filename || "抽象生物", path.extname(file.filename || ""));
   const title = titleBase.trim().slice(0, 40) || "匿名抽象生物";
   writeFileSync(path.join(uploadsDir, filename), file.body);
@@ -181,26 +223,20 @@ async function handleSubmission(req, res) {
 }
 
 async function handleChat(req, res) {
-  const raw = await readBody(req, 128 * 1024);
-  const input = JSON.parse(raw.toString("utf8") || "{}");
+  const raw = await readBody(req, maxChatBytes);
+  const input = parseJson(raw);
   const userMessage = String(input.message || "").trim();
   const history = Array.isArray(input.history) ? input.history : [];
-  const aiConfig = loadAiConfig();
 
   if (!userMessage) {
     sendJson(res, 400, { error: "Message is required" });
     return;
   }
 
-  if (!aiConfig.apiKey || aiConfig.apiKey.includes("填入你的")) {
+  if (!openaiClient) {
     sendJson(res, 500, { error: "请先在 config.yaml 中填写 openai.apiKey" });
     return;
   }
-
-  const client = new OpenAI({
-    baseURL: aiConfig.baseURL || "https://api.deepseek.com",
-    apiKey: aiConfig.apiKey || process.env.DEEPSEEK_API_KEY || "missing-api-key"
-  });
 
   const messages = [
     { role: "system", content: aiConfig.system_prompt || "你是佳小乐，一个温暖、机灵、会鼓励用户的中文互动角色。" },
@@ -214,19 +250,24 @@ async function handleChat(req, res) {
   const request = {
     messages,
     model: aiConfig.model || "deepseek-v4-pro",
-    stream: Boolean(aiConfig.stream)
+    stream: false
   };
 
   if (aiConfig.thinking) request.thinking = aiConfig.thinking;
   if (aiConfig.reasoning_effort) request.reasoning_effort = aiConfig.reasoning_effort;
 
-  const completion = await client.chat.completions.create(request);
+  const completion = await openaiClient.chat.completions.create(request);
   const reply = completion.choices?.[0]?.message?.content || "我刚刚走神了一下，可以再说一遍吗？";
   sendJson(res, 200, { reply });
 }
 
 function serveStatic(pathname, req, res) {
-  const cleanPath = decodeURIComponent(pathname).replaceAll("\\", "/");
+  let cleanPath = "";
+  try {
+    cleanPath = decodeURIComponent(pathname).replaceAll("\\", "/");
+  } catch {
+    throw badRequest("Invalid URL encoding");
+  }
   const relativePath = cleanPath === "/" ? "index.html" : cleanPath.replace(/^\/+/, "");
   const absolutePath = path.resolve(publicDir, relativePath);
 
@@ -239,19 +280,27 @@ function serveStatic(pathname, req, res) {
     ? absolutePath
     : path.join(publicDir, "index.html");
 
-  res.writeHead(200, { "Content-Type": mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream" });
+  const headers = {
+    "Content-Type": mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream",
+    ...securityHeaders(),
+    "Cache-Control": cacheControlFor(filePath)
+  };
+  res.writeHead(200, headers);
   if (req.method === "HEAD") {
     res.end();
     return;
   }
-  createReadStream(filePath).pipe(res);
+  createReadStream(filePath)
+    .on("error", error => handleError(res, error))
+    .pipe(res);
 }
 
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
-    "Content-Length": Buffer.byteLength(body)
+    "Content-Length": Buffer.byteLength(body),
+    ...securityHeaders()
   });
   res.end(body);
 }
@@ -260,16 +309,26 @@ function readBody(req, maxBytes) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let length = 0;
+    let rejected = false;
     req.on("data", chunk => {
-      chunks.push(chunk);
+      if (rejected) return;
       length += chunk.length;
       if (length > maxBytes) {
-        reject(new Error("Request body too large"));
-        req.destroy();
+        rejected = true;
+        const error = new Error("Request body too large");
+        error.statusCode = 413;
+        reject(error);
+        chunks.length = 0;
+        return;
       }
+      chunks.push(chunk);
     });
-    req.on("end", () => resolve(Buffer.concat(chunks)));
-    req.on("error", reject);
+    req.on("end", () => {
+      if (!rejected) resolve(Buffer.concat(chunks));
+    });
+    req.on("error", error => {
+      if (!rejected) reject(error);
+    });
   });
 }
 
@@ -288,7 +347,7 @@ function splitBuffer(buffer, separator) {
 
 function parseMultipart(buffer, contentTypeHeader) {
   const boundaryMatch = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentTypeHeader || "");
-  if (!boundaryMatch) throw new Error("Missing multipart boundary");
+  if (!boundaryMatch) throw badRequest("Missing multipart boundary");
   const boundary = Buffer.from("--" + (boundaryMatch[1] || boundaryMatch[2]));
   const parts = splitBuffer(buffer, boundary);
 
@@ -314,7 +373,7 @@ function parseMultipart(buffer, contentTypeHeader) {
     };
   }
 
-  throw new Error("Image field not found");
+  throw badRequest("Image field not found");
 }
 
 function extensionForMime(mime) {
@@ -326,11 +385,58 @@ function extensionForMime(mime) {
   }[mime] || "";
 }
 
-function loadAiConfig() {
+function loadConfig() {
   const configPath = path.join(root, "config.yaml");
   if (!existsSync(configPath)) return {};
-  const config = parseYaml(readFileSync(configPath, "utf8"));
-  return config.openai || {};
+  return parseYaml(readFileSync(configPath, "utf8"));
+}
+
+function parseJson(buffer) {
+  try {
+    return JSON.parse(buffer.toString("utf8") || "{}");
+  } catch {
+    throw badRequest("Invalid JSON body");
+  }
+}
+
+function badRequest(message) {
+  const error = new Error(message);
+  error.statusCode = 400;
+  return error;
+}
+
+function handleError(res, error) {
+  if (res.headersSent) {
+    res.destroy(error);
+    return;
+  }
+
+  const status = error.statusCode || (error.name === "SyntaxError" ? 400 : 500);
+  if (status >= 500) console.error(error);
+  sendJson(res, status, {
+    error: errorCodeForStatus(status),
+    detail: error.message
+  });
+}
+
+function errorCodeForStatus(status) {
+  if (status === 413) return "payload_too_large";
+  if (status >= 500) return "server_error";
+  return "bad_request";
+}
+
+function cacheControlFor(filePath) {
+  if (filePath.startsWith(path.join(publicDir, "assets")) || filePath.startsWith(uploadsDir)) {
+    return "public, max-age=86400";
+  }
+  return "no-cache";
+}
+
+function securityHeaders() {
+  return {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "same-origin"
+  };
 }
 
 function parseYaml(text) {

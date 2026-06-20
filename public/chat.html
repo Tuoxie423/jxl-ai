@@ -70,6 +70,33 @@
       position: relative;
     }
 
+    .home-link {
+      position: absolute;
+      top: 0;
+      right: 0;
+      min-height: 42px;
+      padding: 0 14px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: #fffaf0;
+      color: var(--ink);
+      box-shadow: 5px 5px 0 rgba(202, 111, 73, 0.28);
+      text-decoration: none;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .home-link:hover,
+    .home-link:focus-visible {
+      transform: translate(2px, 2px);
+      box-shadow: none;
+      outline: none;
+      background: #ffffff;
+    }
+
     .name-tag {
       position: absolute;
       top: 0;
@@ -305,6 +332,96 @@
       transform: none;
     }
 
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(24, 26, 24, 0.5);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal.show {
+      display: grid;
+    }
+
+    .dialog {
+      width: min(430px, 100%);
+      padding: 22px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: rgba(255, 252, 243, 0.96);
+      box-shadow: 12px 12px 0 rgba(24, 26, 24, 0.18);
+    }
+
+    .dialog h2 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .dialog p {
+      margin: 8px 0 14px;
+      color: rgba(24, 26, 24, 0.68);
+      line-height: 1.55;
+    }
+
+    .qr-box {
+      display: grid;
+      place-items: center;
+      min-height: 240px;
+      margin: 14px 0;
+      border: 2px dashed rgba(24, 26, 24, 0.28);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .qr-box img {
+      width: min(240px, 100%);
+      aspect-ratio: 1;
+      object-fit: contain;
+      display: block;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .dialog-close {
+      min-height: 42px;
+      padding: 0 16px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: var(--ink);
+      color: #fffaf0;
+      box-shadow: 4px 4px 0 var(--clay);
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .dialog-close:hover,
+    .dialog-close:focus-visible {
+      transform: translate(2px, 2px);
+      box-shadow: none;
+      outline: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+    }
+
     @media (max-width: 860px) {
       body {
         overflow: auto;
@@ -331,6 +448,12 @@
         margin-bottom: 16px;
       }
 
+      .home-link {
+        position: relative;
+        justify-self: start;
+        margin-bottom: 12px;
+      }
+
       .panel {
         min-height: 520px;
         max-height: none;
@@ -346,15 +469,25 @@
         grid-template-columns: 1fr;
       }
 
+      .dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .dialog-close {
+        width: 100%;
+      }
+
     }
   </style>
 </head>
 <body>
   <main class="app">
     <section class="scene" aria-label="佳小乐角色区域">
+      <a class="home-link" href="index.html">返回首页</a>
       <div class="name-tag">
         <strong>佳小乐</strong>
-        <span id="mood">心情：认真听你说</span>
+        <span id="mood">状态：认真听你说</span>
       </div>
       <div id="character" class="character" role="img" aria-label="佳小乐">
         <img class="sprite-sheet" src="assets/chat/sprite.webp" alt="">
@@ -365,7 +498,7 @@
     <section class="panel" aria-labelledby="chat-title">
       <header class="panel-head">
         <h1 id="chat-title">和佳小乐互动</h1>
-        <p>移动鼠标他会看向你；发送消息后会优先调用第三方 API，服务不可用时自动使用本地回复。</p>
+        <p>移动鼠标他会看向你；发送消息后会优先调用大模型 API，服务不可用时自动使用本地回复。</p>
         <span id="apiStatus" class="api-status" data-mode="fallback">本地回复待命</span>
       </header>
 
@@ -384,6 +517,19 @@
       </form>
     </section>
   </main>
+
+  <div class="modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+    <div class="dialog">
+      <h2 id="qrTitle">佳小乐递来一张二维码</h2>
+      <p>你们已经聊满 5 轮啦。扫码打个赏支持一下。</p>
+      <div class="qr-box">
+        <img src="assets/mental/qr.png" alt="二维码">
+      </div>
+      <div class="dialog-actions">
+        <button class="dialog-close" id="qrClose" type="button">下次一定！</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const SPRITE = { cols: 8, rows: 5, frontFrame: 36, centerRadius: 38 };
@@ -405,9 +551,13 @@
     const sendButton = document.getElementById("send");
     const apiStatus = document.getElementById("apiStatus");
     const mood = document.getElementById("mood");
+    const qrModal = document.getElementById("qrModal");
+    const qrClose = document.getElementById("qrClose");
     const chips = [...document.querySelectorAll(".chip")];
     const history = [];
     const state = { frame: SPRITE.frontFrame, angle: null, name: "front" };
+    let completedTurns = 0;
+    let qrShown = false;
 
     window.__spriteState = state;
     window.ANGLE_KEYS = ANGLE_KEYS;
@@ -486,12 +636,12 @@
       chips.forEach((button) => {
         button.disabled = isBusy;
       });
-      mood.textContent = isBusy ? "心情：正在思考" : "心情：认真听你说";
+      mood.textContent = isBusy ? "状态：正在思考" : "状态：认真听你说";
     }
 
     function setStatus(mode, text) {
       apiStatus.dataset.mode = mode;
-      apiStatus.textContent = text;
+      apiStatus.textContent = text.length > 72 ? `${text.slice(0, 72)}...` : text;
     }
 
     function localReply(text) {
@@ -515,16 +665,43 @@
     }
 
     async function askApi(text) {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.error || "API 请求失败");
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 45000);
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, history }),
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || "API 请求失败");
+        }
+        return data.reply;
+      } finally {
+        window.clearTimeout(timer);
       }
-      return data.reply;
+    }
+
+    function remember(role, content) {
+      history.push({ role, content });
+      if (history.length > 16) {
+        history.splice(0, history.length - 16);
+      }
+    }
+
+    function countCompletedTurn() {
+      completedTurns += 1;
+      if (completedTurns >= 5 && !qrShown) {
+        qrShown = true;
+        window.setTimeout(() => qrModal.classList.add("show"), 240);
+      }
+    }
+
+    function closeQrModal() {
+      qrModal.classList.remove("show");
+      promptInput.focus();
     }
 
     async function sendMessage(text) {
@@ -535,7 +712,7 @@
       }
 
       addMessage(normalized, "user");
-      history.push({ role: "user", content: normalized });
+      remember("user", normalized);
       promptInput.value = "";
       setBusy(true);
       showThinkingPose();
@@ -547,14 +724,16 @@
         showFront();
         pending.textContent = reply;
         pending.classList.remove("pending");
-        history.push({ role: "assistant", content: reply });
-        setStatus("online", "DeepSeek API 已连接");
+        remember("assistant", reply);
+        countCompletedTurn();
+        setStatus("online", "API 已连接");
       } catch (error) {
         const reply = localReply(normalized);
         showFront();
         pending.textContent = reply;
         pending.classList.remove("pending");
-        history.push({ role: "assistant", content: reply });
+        remember("assistant", reply);
+        countCompletedTurn();
         setStatus("fallback", "使用本地回复：" + error.message);
       } finally {
         setBusy(false);
@@ -571,6 +750,16 @@
       sendMessage(promptInput.value);
     });
 
+    qrClose.addEventListener("click", closeQrModal);
+    qrModal.addEventListener("click", event => {
+      if (event.target === qrModal) closeQrModal();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && qrModal.classList.contains("show")) {
+        closeQrModal();
+      }
+    });
+
     addEventListener("pointermove", (event) => updateFromPoint(event.clientX, event.clientY), { passive: true });
     addEventListener("pointerleave", () => {
       if (character.dataset.mode !== "thinking") {
@@ -579,7 +768,7 @@
     });
 
     showFront();
-    addMessage("你好，我是佳小乐。启动 Node 服务并填写 config.yaml 后，我就能接 DeepSeek API 跟你聊天。", "bot");
+    addMessage("你好，我是佳小乐。", "bot");
   </script>
 </body>
 </html>

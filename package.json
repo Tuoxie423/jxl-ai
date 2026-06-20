@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node scripts/check.mjs"
+  },
+  "engines": {
+    "node": ">=22.5.0"
   },
   "dependencies": {
     "openai": "^6.10.0"

@@ -80,6 +80,7 @@
 
     a:hover, button:hover { transform: translateY(-2px) rotate(-1deg); filter: saturate(1.18); }
     button.primary { color: #06101b; background: var(--lime); border: 0; box-shadow: 0 16px 40px rgba(185,255,59,.25); }
+    button:disabled { cursor: wait; opacity: .65; transform: none; }
 
     .hero {
       display: grid;
@@ -238,6 +239,15 @@
       .topbar a, .topbar button, .upload-card button { width: 100%; }
       .card { flex-basis: 112px; margin-right: -10px; }
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -270,7 +280,10 @@
   <script>
     const gallery = document.getElementById("gallery");
     const toast = document.getElementById("toast");
+    const imageInput = document.getElementById("imageInput");
+    const pickImage = document.getElementById("pickImage");
     let toastTimer = 0;
+    let uploading = false;
 
     function speak(text) {
       clearTimeout(toastTimer);
@@ -288,7 +301,7 @@
         const res = await fetch("/api/submissions");
         if (!res.ok) throw new Error("读取失败");
         const data = await res.json();
-        const images = data.images.slice(0, 36);
+        const images = (Array.isArray(data.images) ? data.images : []).slice(0, 36);
         gallery.innerHTML = images.length ? images.map((item, index) => `
           <article class="card" style="--tilt:${((index % 7) - 3) * 3}deg;--z:${index + 1}">
             <img src="${item.url}" alt="${escapeHtml(item.title || `抽象生物 ${index + 1}`)}" loading="lazy">
@@ -301,10 +314,19 @@
     }
 
     async function uploadSelectedImage() {
-      const input = document.getElementById("imageInput");
-      if (!input.files.length) return;
+      const input = imageInput;
+      if (!input.files.length || uploading) return;
+      const file = input.files[0];
+      if (file.size > 12 * 1024 * 1024) {
+        input.value = "";
+        speak("图片太大了，请选择 12MB 以内的文件。");
+        return;
+      }
       const form = new FormData();
-      form.append("image", input.files[0]);
+      form.append("image", file);
+      uploading = true;
+      pickImage.disabled = true;
+      pickImage.textContent = "投稿中...";
       try {
         const res = await fetch("/api/submissions", { method: "POST", body: form });
         if (!res.ok) throw new Error("上传失败");
@@ -313,12 +335,16 @@
         await loadGallery();
       } catch (error) {
         speak("投稿失败：请确认通过本地服务访问，并且图片格式正确。");
+      } finally {
+        uploading = false;
+        pickImage.disabled = false;
+        pickImage.textContent = "投稿图片";
       }
     }
 
     document.getElementById("uploadForm").addEventListener("submit", event => event.preventDefault());
-    document.getElementById("pickImage").addEventListener("click", () => document.getElementById("imageInput").click());
-    document.getElementById("imageInput").addEventListener("change", uploadSelectedImage);
+    pickImage.addEventListener("click", () => imageInput.click());
+    imageInput.addEventListener("change", uploadSelectedImage);
     document.getElementById("refreshGallery").addEventListener("click", loadGallery);
     loadGallery();
   </script>
