@@ -71,9 +71,6 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# 排除 yaml、models 文件（需求指定不忽略）
-# 下面这两行注释代表：不屏蔽 *.yaml *.yml / models 文件夹，不会加入忽略清单
 *.yaml
 *.yml
-node_modules/
 .agents/
