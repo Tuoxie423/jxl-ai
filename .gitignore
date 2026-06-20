@@ -74,3 +74,4 @@ Thumbs.db
 *.yaml
 *.yml
 .agents/
+!node_modules/
