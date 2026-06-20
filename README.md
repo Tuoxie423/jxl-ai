@@ -1,8 +1,7 @@
-Based on the provided code map, I can see this is a web application project with multiple interactive features. Let me create a comprehensive README for this project.
 
 # JXL-AI
 
-一个有趣的 AI 互动 Web 应用，包含聊天、图像生成、问答游戏等多种功能。
+一个有趣的 AI 互动 Web 应用，包含聊天、问答游戏等多种功能。
 
 ## 项目简介
 
@@ -11,10 +10,9 @@ JXL-AI 是一个基于 Node.js 的互动 Web 应用，提供 AI 聊天机器人�
 ## 功能特性
 
 - **AI 聊天** - 与 AI 角色进行实时对话互动
-- **图像上传与识别** - 上传图像并获取 AI 分析
+- **图像上传**
 - **角色展示** - 查看和管理不同的 AI 角色
 - **互动游戏** - 包含瞄准游戏等多种趣味互动
-- **QR 码生成** - 生成二维码用于分享或跳转
 
 ## 技术栈
 
@@ -62,21 +60,20 @@ node server.mjs
 | 首页 | `/` | 游戏、生成器、二维码等功能 |
 | 聊天 | `/chat.html` | 与 AI 角色对话 |
 | 介绍 | `/intro.html` | 角色介绍动画 |
-| 图鉴 | `/bestiary.html` | 上传图像并识别 |
+| 图鉴 | `/bestiary.html` | 上传图像并展示 |
 
 ## 配置说明
 
 - 服务器默认端口：`3000`
 - 数据库文件：`data/app.db`
 - 上传目录：`public/uploads/`
+- 配置文件放在主目录下：`config.yaml`
 
 ## 依赖包
 
 - express - Web 框架
 - multer - 文件上传处理
 - better-sqlite3 - SQLite 数据库
-- qrcode - 二维码生成
-- uuid - 生成唯一标识
 
 ## 许可证
 
