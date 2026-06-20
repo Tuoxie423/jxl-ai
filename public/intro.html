@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>网站开场角色动画</title>
+  <style>
+    :root {
+      --ink: #202124;
+      --paper: #f4efe5;
+      --line: rgba(32, 33, 36, 0.12);
+      --sprite-size: clamp(420px, 80vmin, 768px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Trebuchet MS", sans-serif;
+      background:
+        linear-gradient(90deg, rgba(32, 33, 36, 0.055) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(32, 33, 36, 0.05) 1px, transparent 1px),
+        radial-gradient(circle at 50% 72%, rgba(240, 179, 75, 0.28), transparent 26rem),
+        var(--paper);
+      background-size: 46px 46px, 46px 46px, auto, auto;
+    }
+
+    main {
+      width: min(100vw, 1040px);
+      min-height: 100vh;
+      display: grid;
+      place-items: end center;
+      padding: max(14px, 2.5vh) 18px 26px;
+    }
+
+    .intro {
+      width: var(--sprite-size);
+      height: var(--sprite-size);
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      transform: scale(0.02);
+      transform-origin: 50% 56%;
+      filter: blur(10px);
+      will-change: transform, opacity, filter;
+      pointer-events: none;
+    }
+
+    body.is-ready .intro {
+      animation:
+        character-bloom 1120ms cubic-bezier(0.16, 1, 0.26, 1) 120ms both,
+        character-exit 680ms cubic-bezier(0.65, 0, 0.35, 1) 2850ms forwards;
+    }
+
+    .character {
+      width: 100%;
+      height: 100%;
+      background-image: url("assets/intro/sprite2.webp");
+      background-repeat: no-repeat;
+      background-size: 800% 400%;
+      background-position: 0% 0%;
+      filter: drop-shadow(0 25px 24px rgba(55, 39, 18, 0.2));
+      transform-origin: 50% 92%;
+      will-change: background-position, filter;
+    }
+
+    body.is-playing .character {
+      filter: drop-shadow(0 30px 28px rgba(55, 39, 18, 0.24));
+    }
+
+    .site-shell {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      opacity: 0;
+      transform: translateY(16px);
+      pointer-events: none;
+    }
+
+    body.intro-done .site-shell {
+      animation: site-reveal 700ms ease forwards;
+    }
+
+    .site-mark {
+      width: min(100%, 560px);
+      min-height: 120px;
+      display: grid;
+      place-items: center;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      color: rgba(32, 33, 36, 0.58);
+      font-size: clamp(18px, 3vw, 28px);
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    @keyframes character-bloom {
+      0% {
+        opacity: 0;
+        transform: scale(0.02);
+        filter: blur(10px);
+      }
+
+      42% {
+        opacity: 1;
+        filter: blur(1.8px);
+      }
+
+      78% {
+        opacity: 1;
+        transform: scale(1.035);
+        filter: blur(0);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes character-exit {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(0.82);
+        filter: blur(4px);
+      }
+    }
+
+    @keyframes site-reveal {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 520px) {
+      :root {
+        --sprite-size: min(96vw, 590px);
+      }
+
+      main {
+        padding-inline: 12px;
+        padding-block: 16px;
+        place-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main aria-label="网站开场动画">
+    <div class="intro" id="intro">
+      <div class="character" id="character" role="img" aria-label="正在打招呼的角色"></div>
+    </div>
+  </main>
+
+  <section class="site-shell" aria-label="网站内容">
+    <div class="site-mark">你好</div>
+  </section>
+
+  <script>
+    const character = document.getElementById("character");
+    const intro = document.getElementById("intro");
+
+    const frameCount = 32;
+    const columns = 8;
+    const rows = 4;
+    const fps = 16;
+    const spriteUrl = "assets/intro/sprite2.webp";
+    const allowedNextPages = new Set(["index.html", "chat.html", "bestiary.html"]);
+    const requestedNextPage = new URLSearchParams(window.location.search).get("next");
+    const nextPage = allowedNextPages.has(requestedNextPage) ? requestedNextPage : "index.html";
+
+    let frame = 0;
+    let playing = false;
+    let lastTick = 0;
+    let rafId = 0;
+
+    function framePosition(index) {
+      const col = index % columns;
+      const row = Math.floor(index / columns);
+      const x = columns === 1 ? 0 : (col / (columns - 1)) * 100;
+      const y = rows === 1 ? 0 : (row / (rows - 1)) * 100;
+      character.style.backgroundPosition = `${x}% ${y}%`;
+    }
+
+    function animate(now) {
+      if (!playing) {
+        return;
+      }
+
+      if (now - lastTick >= 1000 / fps) {
+        frame += 1;
+        if (frame >= frameCount) {
+          playing = false;
+          cancelAnimationFrame(rafId);
+          document.body.classList.remove("is-playing");
+          frame = frameCount - 1;
+          framePosition(frame);
+          return;
+        }
+
+        framePosition(frame);
+        lastTick = now;
+      }
+
+      rafId = requestAnimationFrame(animate);
+    }
+
+    function startGreeting() {
+      frame = 0;
+      framePosition(frame);
+      playing = true;
+      lastTick = 0;
+      document.body.classList.add("is-playing");
+      rafId = requestAnimationFrame(animate);
+    }
+
+    function finishIntro() {
+      playing = false;
+      cancelAnimationFrame(rafId);
+      frame = Math.max(frame, frameCount - 4);
+      framePosition(frame);
+      document.body.classList.remove("is-playing");
+      document.body.classList.add("intro-done");
+      window.setTimeout(() => {
+        window.location.href = nextPage;
+      }, 900);
+    }
+
+    function boot() {
+      framePosition(0);
+      document.body.classList.add("is-ready");
+      window.setTimeout(startGreeting, 1050);
+      window.setTimeout(finishIntro, 2850);
+    }
+
+    const image = new Image();
+    image.onload = boot;
+    image.onerror = boot;
+    image.src = spriteUrl;
+
+    intro.addEventListener("animationend", (event) => {
+      if (event.animationName === "character-exit") {
+        intro.hidden = true;
+      }
+    });
+  </script>
+</body>
+</html>

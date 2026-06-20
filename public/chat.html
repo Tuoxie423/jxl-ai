@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>和佳小乐互动</title>
+  <style>
+    :root {
+      --paper: #f7efe1;
+      --ink: #181a18;
+      --clay: #ca6f49;
+      --moss: #55745f;
+      --blue: #6f9bad;
+      --butter: #e7c85d;
+      --line: rgba(24, 26, 24, 0.16);
+      --frame-w: 561;
+      --frame-h: 1051;
+      --cols: 8;
+      --rows: 5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(231, 200, 93, 0.2), transparent 28%),
+        linear-gradient(90deg, rgba(24, 26, 24, 0.05) 1px, transparent 1px) 0 0 / 42px 42px,
+        linear-gradient(0deg, rgba(24, 26, 24, 0.05) 1px, transparent 1px) 0 0 / 42px 42px,
+        var(--paper);
+      color: var(--ink);
+      font-family: "Trebuchet MS", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    .app {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(300px, 0.9fr) minmax(340px, 520px);
+      gap: clamp(20px, 4vw, 56px);
+      align-items: end;
+      padding: clamp(18px, 4vw, 54px);
+      position: relative;
+      isolation: isolate;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 28vh;
+      background:
+        linear-gradient(180deg, transparent, rgba(85, 116, 95, 0.16)),
+        linear-gradient(90deg, rgba(202, 111, 73, 0.2), transparent 34%, rgba(111, 155, 173, 0.22));
+      z-index: -1;
+    }
+
+    .scene {
+      min-height: 78vh;
+      display: grid;
+      place-items: end center;
+      position: relative;
+    }
+
+    .name-tag {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: inline-grid;
+      gap: 4px;
+      padding: 14px 16px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: rgba(247, 239, 225, 0.9);
+      box-shadow: 6px 6px 0 var(--butter);
+    }
+
+    .name-tag strong {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .name-tag span {
+      color: rgba(24, 26, 24, 0.66);
+      font-size: 13px;
+    }
+
+    .character {
+      --col: 4;
+      --row: 4;
+      position: relative;
+      width: min(43vw, calc(82vh * var(--frame-w) / var(--frame-h)), 380px);
+      aspect-ratio: var(--frame-w) / var(--frame-h);
+      overflow: hidden;
+      filter: drop-shadow(0 28px 24px rgba(24, 26, 24, 0.24));
+      transform: translateZ(0);
+      transition: transform 220ms ease;
+    }
+
+    .character[data-bounce="true"] {
+      transform: translateY(-10px);
+    }
+
+    .character .sprite-sheet {
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: calc(var(--cols) * 100%);
+      height: calc(var(--rows) * 100%);
+      max-width: none;
+      pointer-events: none;
+      transform:
+        translateX(calc(var(--col) * -100% / var(--cols)))
+        translateY(calc(var(--row) * -100% / var(--rows)));
+    }
+
+    .thinking-pose {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease;
+    }
+
+    .character[data-mode="thinking"] .sprite-sheet {
+      opacity: 0;
+    }
+
+    .character[data-mode="thinking"] .thinking-pose {
+      opacity: 1;
+    }
+
+    .panel {
+      align-self: center;
+      max-height: min(760px, calc(100vh - 44px));
+      display: grid;
+      grid-template-rows: auto 1fr auto auto;
+      min-height: 560px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: rgba(255, 252, 243, 0.92);
+      box-shadow: 12px 12px 0 rgba(24, 26, 24, 0.14);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 20px 20px 16px;
+      border-bottom: 2px solid var(--line);
+      background: linear-gradient(90deg, rgba(202, 111, 73, 0.16), rgba(111, 155, 173, 0.14));
+    }
+
+    .panel-head h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+
+    .panel-head p {
+      margin: 8px 0 0;
+      color: rgba(24, 26, 24, 0.66);
+      line-height: 1.5;
+    }
+
+    .api-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      margin-top: 12px;
+      padding: 0 10px;
+      border: 1px solid rgba(24, 26, 24, 0.24);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.56);
+      color: rgba(24, 26, 24, 0.68);
+      font-size: 13px;
+    }
+
+    .api-status[data-mode="online"] {
+      color: #245b3b;
+      border-color: rgba(36, 91, 59, 0.32);
+    }
+
+    .api-status[data-mode="fallback"],
+    .api-status[data-mode="error"] {
+      color: #8a4a28;
+      border-color: rgba(138, 74, 40, 0.32);
+    }
+
+    .messages {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+
+    .bubble {
+      max-width: 86%;
+      padding: 12px 14px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .bubble.bot {
+      align-self: flex-start;
+      background: #ffffff;
+      box-shadow: 5px 5px 0 rgba(111, 155, 173, 0.26);
+    }
+
+    .bubble.user {
+      align-self: flex-end;
+      background: #f3d886;
+      box-shadow: 5px 5px 0 rgba(202, 111, 73, 0.22);
+    }
+
+    .bubble.pending {
+      color: rgba(24, 26, 24, 0.62);
+      font-style: italic;
+    }
+
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 0 18px 16px;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .chip,
+    .send {
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: #fffaf0;
+      color: var(--ink);
+      min-height: 42px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .chip:hover,
+    .send:hover,
+    .chip:focus-visible,
+    .send:focus-visible {
+      transform: translate(2px, 2px);
+      box-shadow: none;
+      outline: none;
+      background: #ffffff;
+    }
+
+    .chip {
+      box-shadow: 4px 4px 0 rgba(85, 116, 95, 0.22);
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 16px 18px 18px;
+      border-top: 2px solid var(--line);
+    }
+
+    .composer input {
+      min-width: 0;
+      min-height: 46px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      padding: 0 14px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .composer input:focus {
+      outline: 3px solid rgba(111, 155, 173, 0.34);
+    }
+
+    .send {
+      padding: 0 18px;
+      background: var(--ink);
+      color: #fffaf0;
+      box-shadow: 4px 4px 0 var(--clay);
+    }
+
+    .send:disabled,
+    .chip:disabled {
+      cursor: wait;
+      opacity: 0.65;
+      transform: none;
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+        align-items: center;
+      }
+
+      .scene {
+        min-height: 460px;
+      }
+
+      .character {
+        width: min(70vw, 320px);
+      }
+
+      .name-tag {
+        position: relative;
+        justify-self: start;
+        margin-bottom: 16px;
+      }
+
+      .panel {
+        min-height: 520px;
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .chips {
+        grid-template-columns: 1fr;
+      }
+
+      .composer {
+        grid-template-columns: 1fr;
+      }
+
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="scene" aria-label="佳小乐角色区域">
+      <div class="name-tag">
+        <strong>佳小乐</strong>
+        <span id="mood">心情：认真听你说</span>
+      </div>
+      <div id="character" class="character" role="img" aria-label="佳小乐">
+        <img class="sprite-sheet" src="assets/chat/sprite.webp" alt="">
+        <img class="thinking-pose" src="assets/chat/thinking_pose.webp" alt="">
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="chat-title">
+      <header class="panel-head">
+        <h1 id="chat-title">和佳小乐互动</h1>
+        <p>移动鼠标他会看向你；发送消息后会优先调用第三方 API，服务不可用时自动使用本地回复。</p>
+        <span id="apiStatus" class="api-status" data-mode="fallback">本地回复待命</span>
+      </header>
+
+      <div id="messages" class="messages" aria-live="polite"></div>
+
+      <div class="chips" aria-label="快捷互动">
+        <button class="chip" type="button" data-message="你好，佳小乐">打招呼</button>
+        <button class="chip" type="button" data-message="讲个小故事">讲个小故事</button>
+        <button class="chip" type="button" data-message="给我一个创意灵感">给我灵感</button>
+        <button class="chip" type="button" data-message="鼓励我一下">鼓励我一下</button>
+      </div>
+
+      <form id="composer" class="composer">
+        <input id="prompt" name="prompt" autocomplete="off" placeholder="输入你想对佳小乐说的话">
+        <button id="send" class="send" type="submit">发送</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const SPRITE = { cols: 8, rows: 5, frontFrame: 36, centerRadius: 38 };
+    const ANGLE_KEYS = [
+      { angle: 0, frame: 16, name: "right" },
+      { angle: 45, frame: 18, name: "down-right" },
+      { angle: 90, frame: 22, name: "down" },
+      { angle: 135, frame: 26, name: "down-left" },
+      { angle: 180, frame: 32, name: "left" },
+      { angle: 225, frame: 33, name: "up-left" },
+      { angle: 270, frame: 6, name: "up" },
+      { angle: 315, frame: 10, name: "up-right" },
+    ];
+
+    const character = document.getElementById("character");
+    const messages = document.getElementById("messages");
+    const composer = document.getElementById("composer");
+    const promptInput = document.getElementById("prompt");
+    const sendButton = document.getElementById("send");
+    const apiStatus = document.getElementById("apiStatus");
+    const mood = document.getElementById("mood");
+    const chips = [...document.querySelectorAll(".chip")];
+    const history = [];
+    const state = { frame: SPRITE.frontFrame, angle: null, name: "front" };
+
+    window.__spriteState = state;
+    window.ANGLE_KEYS = ANGLE_KEYS;
+
+    function angularDistance(a, b) {
+      const d = Math.abs(a - b) % 360;
+      return Math.min(d, 360 - d);
+    }
+
+    function keyForAngle(angle) {
+      return ANGLE_KEYS.reduce((best, key) => (
+        angularDistance(angle, key.angle) < angularDistance(angle, best.angle) ? key : best
+      ), ANGLE_KEYS[0]);
+    }
+
+    function setFrame(frame, name, angle) {
+      character.style.setProperty("--col", frame % SPRITE.cols);
+      character.style.setProperty("--row", Math.floor(frame / SPRITE.cols));
+      character.dataset.frame = String(frame);
+      character.dataset.direction = name;
+      state.frame = frame;
+      state.name = name;
+      state.angle = angle;
+    }
+
+    function showFront() {
+      character.dataset.mode = "sprite";
+      setFrame(SPRITE.frontFrame, "front", null);
+    }
+
+    function showThinkingPose() {
+      character.dataset.mode = "thinking";
+      state.name = "thinking";
+      state.angle = null;
+    }
+
+    function anchorPoint() {
+      const rect = character.getBoundingClientRect();
+      return { x: rect.left + rect.width * 0.5, y: rect.top + rect.height * 0.31 };
+    }
+
+    function updateFromPoint(x, y) {
+      if (character.dataset.mode === "thinking") {
+        return;
+      }
+      const anchor = anchorPoint();
+      const dx = x - anchor.x;
+      const dy = y - anchor.y;
+      if (Math.hypot(dx, dy) < SPRITE.centerRadius) {
+        setFrame(SPRITE.frontFrame, "front", null);
+        return;
+      }
+      const angle = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+      const key = keyForAngle(angle);
+      setFrame(key.frame, key.name, angle);
+    }
+
+    function addMessage(text, from = "bot", extraClass = "") {
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${from} ${extraClass}`.trim();
+      bubble.textContent = text;
+      messages.appendChild(bubble);
+      messages.scrollTop = messages.scrollHeight;
+      return bubble;
+    }
+
+    function bounce() {
+      character.dataset.bounce = "true";
+      window.setTimeout(() => {
+        character.dataset.bounce = "false";
+      }, 220);
+    }
+
+    function setBusy(isBusy) {
+      sendButton.disabled = isBusy;
+      chips.forEach((button) => {
+        button.disabled = isBusy;
+      });
+      mood.textContent = isBusy ? "心情：正在思考" : "心情：认真听你说";
+    }
+
+    function setStatus(mode, text) {
+      apiStatus.dataset.mode = mode;
+      apiStatus.textContent = text;
+    }
+
+    function localReply(text) {
+      const lower = text.toLowerCase();
+      if (/你好|hello|hi|嗨/.test(lower)) {
+        return "你好呀，我是佳小乐。你靠近一点，我会看着你说话。";
+      }
+      if (/故事|story/.test(lower)) {
+        return "今天我在网格地板上发现一条光线，它像小路一样指向一个新想法：先试一小步，再把它变成作品。";
+      }
+      if (/灵感|idea|创意/.test(lower)) {
+        return "给你一个灵感：把今天最普通的一件事做成小互动，比如一杯水、一个按钮、一句问候，都可以有性格。";
+      }
+      if (/累|难|烦|鼓励|cheer/.test(lower)) {
+        return "你已经把事情推进到这里了，别急。下一步只要足够小，就会变得很容易开始。";
+      }
+      if (/名字|你是谁|佳小乐/.test(lower)) {
+        return "我叫佳小乐，是这个页面里的互动角色。你移动鼠标，我会转头看向你。";
+      }
+      return "我听见了。把它换成一个更小的问题，我们就能一起拆开来看。";
+    }
+
+    async function askApi(text) {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, history }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "API 请求失败");
+      }
+      return data.reply;
+    }
+
+    async function sendMessage(text) {
+      const normalized = text.trim();
+      if (!normalized) {
+        promptInput.focus();
+        return;
+      }
+
+      addMessage(normalized, "user");
+      history.push({ role: "user", content: normalized });
+      promptInput.value = "";
+      setBusy(true);
+      showThinkingPose();
+      setStatus("thinking", "佳小乐正在思考");
+      const pending = addMessage("佳小乐正在想...", "bot", "pending");
+
+      try {
+        const reply = await askApi(normalized);
+        showFront();
+        pending.textContent = reply;
+        pending.classList.remove("pending");
+        history.push({ role: "assistant", content: reply });
+        setStatus("online", "DeepSeek API 已连接");
+      } catch (error) {
+        const reply = localReply(normalized);
+        showFront();
+        pending.textContent = reply;
+        pending.classList.remove("pending");
+        history.push({ role: "assistant", content: reply });
+        setStatus("fallback", "使用本地回复：" + error.message);
+      } finally {
+        setBusy(false);
+        bounce();
+      }
+    }
+
+    chips.forEach((button) => {
+      button.addEventListener("click", () => sendMessage(button.dataset.message || button.textContent));
+    });
+
+    composer.addEventListener("submit", (event) => {
+      event.preventDefault();
+      sendMessage(promptInput.value);
+    });
+
+    addEventListener("pointermove", (event) => updateFromPoint(event.clientX, event.clientY), { passive: true });
+    addEventListener("pointerleave", () => {
+      if (character.dataset.mode !== "thinking") {
+        showFront();
+      }
+    });
+
+    showFront();
+    addMessage("你好，我是佳小乐。启动 Node 服务并填写 config.yaml 后，我就能接 DeepSeek API 跟你聊天。", "bot");
+  </script>
+</body>
+</html>

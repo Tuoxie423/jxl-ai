@@ -1,0 +1,1499 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI精神状态检测中心 v4.0</title>
+  <style>
+    :root {
+      --ink: #f7fbff;
+      --muted: rgba(247, 251, 255, .68);
+      --panel: rgba(7, 10, 24, .76);
+      --line: rgba(255, 255, 255, .18);
+      --cyan: #20e7ff;
+      --pink: #ff3c83;
+      --lime: #b9ff3b;
+      --gold: #ffe56a;
+      --red: #ff263f;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .42);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: #050713; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--ink);
+      font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      background:
+        radial-gradient(circle at 12% 9%, rgba(32, 231, 255, .27), transparent 30%),
+        radial-gradient(circle at 82% 16%, rgba(255, 60, 131, .24), transparent 31%),
+        radial-gradient(circle at 57% 78%, rgba(185, 255, 59, .14), transparent 31%),
+        linear-gradient(140deg, #060717 0%, #18104c 48%, #06182d 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: .2;
+      background-image:
+        linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: linear-gradient(#000 0%, transparent 84%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: .28;
+      background: repeating-linear-gradient(to bottom, rgba(255,255,255,.04) 0 1px, transparent 1px 8px);
+      mix-blend-mode: screen;
+    }
+
+    canvas#particles { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; }
+    main { position: relative; z-index: 3; }
+
+    .hero {
+      min-height: 94vh;
+      display: grid;
+      place-items: center;
+      padding: 34px clamp(18px, 4vw, 58px) 22px;
+    }
+
+    .hero-grid {
+      width: min(1180px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 455px);
+      gap: clamp(24px, 4vw, 56px);
+      align-items: center;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--cyan);
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(14px);
+      animation: fadeUp .72s ease both;
+    }
+
+    .kicker i {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--lime);
+      box-shadow: 0 0 18px var(--lime);
+      animation: blink .8s infinite alternate;
+    }
+
+    h1 {
+      margin: 24px 0 14px;
+      max-width: 780px;
+      font-size: clamp(44px, 7vw, 106px);
+      line-height: .9;
+      letter-spacing: 0;
+      text-shadow: 0 0 34px rgba(32,231,255,.38), 6px 8px 0 rgba(255,60,131,.3);
+      animation: titleIn .95s cubic-bezier(.2, 1.1, .3, 1) .18s both;
+    }
+
+    .subtitle {
+      max-width: 680px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 25px);
+      line-height: 1.75;
+      animation: fadeUp .78s ease .42s both;
+    }
+
+    .subtitle strong { color: var(--gold); }
+    .name-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding: 10px 13px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.35);
+      color: var(--muted);
+      backdrop-filter: blur(12px);
+      animation: fadeUp .78s ease .5s both;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+      animation: fadeUp .78s ease .6s both;
+    }
+
+    button, .link-button {
+      appearance: none;
+      border: 0;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 14px;
+      color: #06101b;
+      background: var(--lime);
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 16px 40px rgba(185,255,59,.26);
+      transition: transform .2s ease, filter .2s ease;
+      white-space: nowrap;
+    }
+
+    button:hover, .link-button:hover { transform: translateY(-2px) rotate(-1deg); filter: saturate(1.18); }
+    button.secondary, .link-button.secondary {
+      color: var(--ink);
+      background: rgba(255,255,255,.1);
+      border: 1px solid var(--line);
+      box-shadow: none;
+      backdrop-filter: blur(14px);
+    }
+
+    button.danger { color: #fff; background: var(--pink); box-shadow: 0 16px 40px rgba(255,60,131,.24); }
+
+    .agent-card {
+      position: relative;
+      min-height: 620px;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.2);
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      animation: cardIn .88s cubic-bezier(.2, 1, .2, 1) .34s both;
+    }
+
+    .agent-card::before {
+      content: "";
+      position: absolute;
+      inset: -45%;
+      background: conic-gradient(from 90deg, transparent, rgba(32,231,255,.34), transparent, rgba(255,60,131,.36), transparent);
+      animation: spin 8s linear infinite;
+    }
+
+    .agent-inner {
+      position: absolute;
+      inset: 12px;
+      overflow: hidden;
+      border-radius: 18px;
+      background: #070916;
+    }
+
+    .status {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .chip {
+      padding: 8px 11px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      background: rgba(0,0,0,.44);
+      backdrop-filter: blur(12px);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .carousel { position: absolute; inset: 0; cursor: pointer; user-select: none; }
+    .photo {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: scale(1.06);
+      transition: opacity .65s ease, transform .65s ease;
+      background: #080a14;
+    }
+
+    .photo.active { opacity: 1; transform: scale(1); z-index: 2; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(1.08) contrast(1.04); }
+    .photo.avatar img { object-fit: contain; background: #fff; }
+    .photo.chat-link { cursor: pointer; }
+    .photo.chat-link::after {
+      content: "点击和AI佳小乐聊天";
+      position: absolute;
+      top: 68px;
+      right: 18px;
+      z-index: 5;
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.24);
+      color: #06101b;
+      background: var(--lime);
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 12px 28px rgba(185,255,59,.24);
+    }
+    .photo.top img { object-position: center top; }
+
+    .label {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 4;
+      display: grid;
+      gap: 8px;
+      padding: 15px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(14px);
+    }
+
+    .label b { font-size: 19px; }
+    .label span { color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+    .nav {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      pointer-events: none;
+    }
+
+    .nav button {
+      pointer-events: all;
+      width: 42px;
+      min-height: 42px;
+      padding: 0;
+      border-radius: 50%;
+      color: var(--ink);
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.22);
+      box-shadow: none;
+    }
+
+    section { padding: 36px clamp(18px, 4vw, 58px); }
+    .inner { width: min(1180px, 100%); margin: 0 auto; }
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 54px);
+      letter-spacing: 0;
+      text-shadow: 0 0 22px rgba(32,231,255,.35);
+    }
+
+    .section-title p { margin: 0; color: var(--muted); line-height: 1.65; max-width: 500px; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .panel {
+      padding: clamp(18px, 3vw, 28px);
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .panel h3 { margin: 0 0 13px; font-size: 24px; }
+    .detector, .game-panel { grid-column: span 7; }
+    .generator, .rank-panel { grid-column: span 5; }
+    .certificate-panel { grid-column: 1 / -1; }
+
+    .terminal {
+      min-height: 190px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(32,231,255,.22);
+      color: #c8fffb;
+      background: rgba(0,8,16,.72);
+      font-family: Consolas, "Microsoft YaHei UI", monospace;
+      line-height: 1.7;
+      box-shadow: inset 0 0 28px rgba(32,231,255,.08);
+    }
+
+    .terminal div { animation: fadeUp .28s ease both; }
+    .progress {
+      height: 18px;
+      margin: 16px 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      overflow: hidden;
+    }
+
+    .bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--lime), var(--pink));
+      box-shadow: 0 0 26px rgba(32,231,255,.55);
+      transition: width .7s cubic-bezier(.2,.95,.2,1);
+    }
+
+    .roulette {
+      min-height: 154px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      margin: 16px 0;
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px dashed rgba(255,255,255,.24);
+      background: linear-gradient(135deg, rgba(255,60,131,.12), transparent), rgba(255,255,255,.06);
+    }
+
+    .roulette b { display: block; color: var(--lime); font-size: clamp(30px, 5vw, 50px); }
+    .roast { min-height: 62px; color: var(--muted); line-height: 1.7; }
+
+    .wall {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+
+    .tile {
+      position: relative;
+      min-height: 210px;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      cursor: pointer;
+      box-shadow: 0 18px 44px rgba(0,0,0,.25);
+    }
+
+    .tile:nth-child(1), .tile:nth-child(2), .tile:nth-child(3) { grid-column: span 2; }
+    .tile:nth-child(4), .tile:nth-child(5) { grid-column: span 3; }
+    .tile:nth-child(6) { grid-column: span 6; min-height: 330px; }
+    .tile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease, filter .4s ease; }
+    .tile:hover img { transform: scale(1.08); filter: saturate(1.35) contrast(1.1); }
+    .tile strong {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(12px);
+    }
+
+    .bestiary-entry {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      margin-top: 16px;
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: linear-gradient(135deg, rgba(185,255,59,.12), transparent 42%), rgba(7,10,24,.74);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .bestiary-entry h3 {
+      margin: 0 0 6px;
+      font-size: 24px;
+    }
+
+    .bestiary-entry p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .game-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .scoreboard { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); }
+    .arena {
+      position: relative;
+      min-height: 420px;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.16);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(32,231,255,.1), transparent 28%),
+        linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
+        rgba(0, 7, 18, .74);
+      background-size: auto, 38px 38px, 38px 38px, auto;
+      cursor: none;
+      user-select: none;
+    }
+
+    .face-reticle {
+      position: absolute;
+      left: var(--reticle-x, 50%);
+      top: var(--reticle-y, 50%);
+      width: 66px;
+      height: 66px;
+      transform: translate(-50%, -50%) scale(var(--reticle-scale, 1));
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.28);
+      background: transparent;
+      box-shadow: 0 0 24px rgba(32,231,255,.28);
+      pointer-events: none;
+      opacity: .95;
+      z-index: 4;
+      transition: transform .08s ease, opacity .16s ease;
+    }
+
+    .face-reticle::before, .face-reticle::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 999px;
+      background: rgba(255,255,255,.74);
+      box-shadow: 0 0 12px rgba(32,231,255,.5);
+      transform: translate(-50%, -50%);
+    }
+
+    .face-reticle::before { width: 88px; height: 2px; }
+    .face-reticle::after { width: 2px; height: 88px; }
+
+    .arena:not(:hover) .face-reticle { opacity: .45; }
+    .arena.firing .face-reticle { --reticle-scale: .82; }
+
+    .target {
+      position: absolute;
+      width: var(--size);
+      height: var(--size);
+      left: var(--x);
+      top: var(--y);
+      transform: translate(-50%, -50%) scale(.7);
+      border-radius: 50%;
+      border: 4px solid rgba(255,255,255,.8);
+      background:
+        radial-gradient(circle, rgba(255,60,131,.16) 0 42%, transparent 43%),
+        url("assets/mental/wideeye.jpg") center / cover no-repeat;
+      box-shadow: 0 0 34px rgba(32,231,255,.5), inset 0 0 18px rgba(0,0,0,.25);
+      animation: targetIn .14s ease forwards;
+    }
+
+    .target::after {
+      content: "";
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.25);
+      animation: pulse .7s infinite;
+    }
+
+    .hit-mark {
+      position: absolute;
+      color: var(--gold);
+      font-size: 24px;
+      font-weight: 1000;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: scorePop .6s ease forwards;
+    }
+
+    .rank-list { display: grid; gap: 10px; margin-top: 14px; }
+    .rank-row {
+      display: grid;
+      grid-template-columns: 42px 1fr minmax(86px, auto);
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.13);
+      background: rgba(255,255,255,.06);
+    }
+
+    .rank-row.me { border-color: rgba(185,255,59,.6); box-shadow: inset 0 0 24px rgba(185,255,59,.08); }
+    .rank-row b { color: var(--gold); }
+    .rank-score {
+      display: grid;
+      justify-items: end;
+      gap: 3px;
+      color: var(--gold);
+      font-size: 24px;
+      font-weight: 1000;
+      line-height: 1;
+    }
+    .rank-score small {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .rank-meta { margin-top: 12px; color: var(--muted); line-height: 1.65; }
+
+    .certificate {
+      position: relative;
+      min-height: 430px;
+      display: grid;
+      align-content: center;
+      gap: 13px;
+      padding: 24px;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 2px solid rgba(255,229,106,.6);
+      background: linear-gradient(135deg, rgba(255,229,106,.13), transparent 42%), linear-gradient(315deg, rgba(32,231,255,.12), transparent 44%), rgba(5,8,18,.82);
+    }
+
+    .certificate::before {
+      content: "SSR+";
+      position: absolute;
+      right: -18px;
+      bottom: 6px;
+      color: rgba(255,255,255,.08);
+      font-size: 110px;
+      font-weight: 1000;
+      transform: rotate(-10deg);
+    }
+
+    .certificate h3 { margin: 0 0 6px; text-align: center; color: var(--gold); font-size: 27px; }
+    .cert-row { display: flex; justify-content: space-between; gap: 14px; padding-bottom: 9px; border-bottom: 1px dashed rgba(255,255,255,.18); color: var(--muted); }
+    .cert-row b { color: var(--ink); }
+    .cert-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(0,0,0,.68);
+      backdrop-filter: blur(12px);
+    }
+
+    .modal.show { display: grid; }
+    .dialog {
+      width: min(460px, 100%);
+      padding: 24px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(8,12,30,.94);
+      box-shadow: var(--shadow);
+    }
+
+    .dialog h3 { margin: 0 0 10px; font-size: 26px; }
+    .dialog p { color: var(--muted); line-height: 1.65; margin: 0 0 16px; }
+    .dialog input {
+      width: 100%;
+      min-height: 48px;
+      padding: 0 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      color: var(--ink);
+      font-size: 16px;
+      outline: none;
+    }
+
+    .dialog-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .qr-box {
+      display: grid;
+      place-items: center;
+      min-height: 260px;
+      margin: 16px 0;
+      border-radius: 20px;
+      border: 1px dashed rgba(255,255,255,.25);
+      background: #fff;
+      color: #111;
+      overflow: hidden;
+    }
+
+    .qr-box img { width: 100%; max-width: 260px; aspect-ratio: 1; object-fit: contain; display: block; }
+    .qr-fallback { display: grid; place-items: center; width: 220px; aspect-ratio: 1; background: repeating-linear-gradient(45deg, #111 0 10px, #fff 10px 20px); color: #fff; text-align: center; font-weight: 900; text-shadow: 0 2px 4px #000; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 22px;
+      z-index: 50;
+      width: min(560px, calc(100vw - 30px));
+      padding: 15px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(4,8,18,.84);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      text-align: center;
+      font-weight: 900;
+      transform: translate(-50%, -120%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform .35s ease, opacity .35s ease;
+    }
+
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+    .emoji { position: fixed; top: -50px; z-index: 48; pointer-events: none; animation: emojiFall linear forwards; will-change: transform; }
+
+    .boss-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 37;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(255,38,63,.2), rgba(255,38,63,.78)), repeating-linear-gradient(45deg, rgba(0,0,0,.14) 0 16px, transparent 16px 32px);
+      transition: opacity .18s ease;
+      animation: dangerFlash .34s infinite alternate;
+    }
+
+    .boss-alert {
+      width: min(760px, calc(100vw - 34px));
+      padding: clamp(22px, 5vw, 52px);
+      text-align: center;
+      border-radius: 24px;
+      border: 2px solid rgba(255,255,255,.75);
+      background: rgba(0,0,0,.54);
+      box-shadow: 0 0 60px rgba(255,255,255,.22);
+      transform: rotate(-2deg);
+    }
+
+    .boss-alert h2 { margin: 0 0 12px; color: #fff; font-size: clamp(38px, 9vw, 96px); text-shadow: 6px 5px 0 #000, 0 0 30px var(--gold); }
+    .boss-alert p { margin: 0; color: #fff; font-size: clamp(18px, 3vw, 30px); font-weight: 900; }
+    body.boss { animation: bossShake .08s infinite; }
+    body.boss .boss-layer { opacity: 1; pointer-events: all; }
+    body.boss .photo { animation: flyMadness 1.35s linear infinite; }
+    .floater { position: fixed; z-index: 36; width: 120px; height: 120px; object-fit: cover; border-radius: 24px; border: 3px solid #fff; pointer-events: none; animation: floater 2s linear forwards; }
+
+    .shake { animation: violentShake .08s infinite; }
+    .stretch { animation: stretch 2.8s ease-in-out; }
+    .squash { animation: squash 2.8s ease-in-out; }
+    .rotate { animation: madSpin 3.2s cubic-bezier(.4,0,.2,1); }
+    .glitch { animation: glitch .22s steps(2,end) infinite; }
+    .warp { animation: warp 3s ease-in-out; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes titleIn { from { opacity: 0; transform: translateY(32px) scale(.96); filter: blur(10px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(28px) rotate(2deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }
+    @keyframes blink { to { opacity: .35; transform: scale(.7); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes targetIn { to { transform: translate(-50%, -50%) scale(1); } }
+    @keyframes pulse { to { transform: scale(1.5); opacity: 0; } }
+    @keyframes violentShake { 0% { transform: translate(0,0); } 25% { transform: translate(-12px,5px) rotate(-2deg); } 50% { transform: translate(12px,-4px) rotate(2deg); } 75% { transform: translate(-8px,-8px) rotate(1deg); } 100% { transform: translate(8px,8px) rotate(-1deg); } }
+    @keyframes stretch { 20%,70% { transform: scaleX(1.35) scaleY(.86); filter: saturate(1.6); } 100% { transform: scale(1); } }
+    @keyframes squash { 20%,70% { transform: scaleX(.82) scaleY(1.3); filter: contrast(1.4); } 100% { transform: scale(1); } }
+    @keyframes madSpin { 50% { transform: rotate(720deg) scale(.9); filter: hue-rotate(200deg); } 100% { transform: rotate(0) scale(1); } }
+    @keyframes glitch { 0% { transform: translate(0); filter: hue-rotate(0deg) saturate(2); } 25% { transform: translate(10px,-3px); filter: hue-rotate(120deg) saturate(2.4); } 50% { transform: translate(-9px,4px); filter: hue-rotate(220deg) invert(.1); } 75% { transform: translate(4px,8px); filter: hue-rotate(310deg) contrast(1.6); } 100% { transform: translate(0); filter: hue-rotate(0deg); } }
+    @keyframes warp { 20% { transform: skew(14deg,-8deg) scale(1.08); border-radius: 35% 8% 42% 10%; } 55% { transform: skew(-15deg,9deg) scale(.96); border-radius: 12% 45% 11% 36%; } 100% { transform: skew(0) scale(1); border-radius: 0; } }
+    @keyframes emojiFall { to { transform: translate3d(var(--dx), calc(100vh + 90px), 0) rotate(var(--rot)); opacity: 0; } }
+    @keyframes bossShake { 0% { transform: translate(0,0); } 50% { transform: translate(5px,-3px); } 100% { transform: translate(-5px,3px); } }
+    @keyframes dangerFlash { from { filter: hue-rotate(0deg) brightness(1); } to { filter: hue-rotate(38deg) brightness(1.45); } }
+    @keyframes flyMadness { 0% { transform: translate(0,0) rotate(0) scale(1); } 33% { transform: translate(14px,-10px) rotate(6deg) scale(1.04); } 66% { transform: translate(-14px,10px) rotate(-6deg) scale(.98); } 100% { transform: translate(0,0) rotate(0) scale(1); } }
+    @keyframes floater { from { transform: translate(0,0) rotate(0) scale(.7); opacity: 0; } 10% { opacity: 1; } to { transform: translate(var(--x), var(--y)) rotate(900deg) scale(1.2); opacity: 0; } }
+    @keyframes scorePop { to { transform: translate(-50%, -92px) scale(1.35); opacity: 0; } }
+
+    @media (max-width: 880px) {
+      .hero { min-height: auto; }
+      .hero-grid { grid-template-columns: 1fr; }
+      .agent-card { min-height: 560px; }
+      .section-title { align-items: start; flex-direction: column; }
+      .detector, .generator, .game-panel, .rank-panel, .certificate-panel { grid-column: 1 / -1; }
+      .wall { grid-template-columns: 1fr 1fr; }
+      .tile, .tile:nth-child(n) { grid-column: span 1; min-height: 230px; }
+      .tile:nth-child(6) { grid-column: 1 / -1; }
+      .bestiary-entry { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 540px) {
+      h1 { font-size: 45px; }
+      .agent-card { min-height: 520px; border-radius: 22px; }
+      .actions, .cert-actions, .dialog-actions { display: grid; grid-template-columns: 1fr; }
+      button, .link-button { width: 100%; }
+      .wall { grid-template-columns: 1fr; }
+      .tile, .tile:nth-child(n) { grid-column: 1 / -1; }
+      .arena { min-height: 330px; }
+      .cert-row { display: grid; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles" aria-hidden="true"></canvas>
+  <div class="toast" id="toast">AI佳小乐正在开机...</div>
+  <div class="boss-layer" aria-hidden="true">
+    <div class="boss-alert">
+      <h2>⚠ 警告 ⚠</h2>
+      <p>检测到高浓度抽象能量，AI佳小乐正在努力绷住。</p>
+    </div>
+  </div>
+
+  <div class="modal" id="nameModal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
+    <div class="dialog">
+      <h3 id="nameTitle">输入用户名</h3>
+      <p id="nameHint">AI佳小乐需要知道你是谁，才能开始测试或生成证书。</p>
+      <input id="nameInput" maxlength="18" autocomplete="nickname" placeholder="例如：东北赛区第一枪">
+      <div class="dialog-actions">
+        <button id="nameConfirm">确认</button>
+        <button class="secondary" id="nameCancel">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+    <div class="dialog">
+      <h3 id="qrTitle">打个赏吧，不打也行</h3>
+      <p>彭于晏和刘亦菲们，给佳小乐打个赏吧，让佳小乐的服务器回回血，感谢支持！</p>
+      <div class="qr-box" id="qrBox">
+        <img src="assets/mental/qr.png" alt="二维码" id="qrImage">
+        <div class="qr-fallback" id="qrFallback">二维码<br>预留位</div>
+      </div>
+      <div class="dialog-actions">
+        <button id="qrApprove">继续生成证书</button>
+        <button class="secondary" id="qrClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="kicker"><i></i>AI精神状态检测中心 v4.0</div>
+          <h1>AI佳小乐</h1>
+          <p class="subtitle">卡通角色<strong>佳小乐</strong>正式上岗：负责检测精神状态、发放宇宙认证证书，并把用户送进 FPS 定点测试排行榜。</p>
+          <div class="name-pill">当前用户：<b id="currentUser">未登录</b><button class="secondary" id="switchUser">切换</button></div>
+          <div class="actions">
+            <button id="startScan">开始检测</button>
+            <a class="link-button secondary" href="#aimGame">定点测试小游戏</a>
+            <button class="secondary" id="certShortcut">申请证书</button>
+            <a class="link-button secondary" href="intro.html?next=chat.html">和AI佳小乐聊天</a>
+            <a class="link-button secondary" href="bestiary.html">抽象生物图鉴</a>
+          </div>
+        </div>
+
+        <aside class="agent-card" aria-label="AI佳小乐档案轮播">
+          <div class="agent-inner">
+            <div class="status">
+              <div class="chip">AI JIA XIAOLE</div>
+              <div class="chip" id="counter">01 / 06</div>
+            </div>
+            <div class="carousel" id="carousel"></div>
+            <div class="nav">
+              <button id="prevPhoto" aria-label="上一张">‹</button>
+              <button id="nextPhoto" aria-label="下一张">›</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-title">
+          <h2>AI检测模块</h2>
+          <p>AI佳小乐会用极其严肃的语气，生成极其不严肃的结果。</p>
+        </div>
+        <div class="grid">
+          <div class="panel detector">
+            <h3>脑电波扫描终端</h3>
+            <div class="terminal" id="terminal"><div>点击“开始检测”，AI佳小乐将连接国家精神状态数据库。</div></div>
+            <div class="progress"><div class="bar" id="bar"></div></div>
+            <button id="scanAgain" class="secondary">重新检测</button>
+          </div>
+          <div class="panel generator">
+            <h3>发癫指数生成器</h3>
+            <div class="roulette" id="roulette"><div><b>待检测</b><span>危险等级：未知</span></div></div>
+            <button id="randomize">生成今日鉴定</button>
+            <p class="roast" id="roast">AI吐槽系统待机中：请点击照片或生成鉴定。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-title">
+          <h2>表情包证据墙</h2>
+          <p>所有照片都参与互动。点击任意照片，会触发鬼畜变形、表情雨和 AI 吐槽。</p>
+        </div>
+        <div class="wall" id="wall"></div>
+        <div class="bestiary-entry">
+          <div>
+            <h3>抽象生物图鉴</h3>
+            <p>单开一页，里面只有投稿按钮和最近入库的小图片堆叠墙。</p>
+          </div>
+          <a class="link-button" href="bestiary.html">打开图鉴</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="aimGame">
+      <div class="inner">
+        <div class="section-title">
+          <h2>FPS定点测试</h2>
+          <p>30秒限时小游戏：随机靶子越点越快，连击越高加分越狠。得分会保存到 SQLite，已有用户名只更新最高分。</p>
+        </div>
+        <div class="grid">
+          <div class="panel game-panel">
+            <div class="game-top">
+              <button id="startGame">开始测试</button>
+              <div class="scoreboard">
+                <span>分数：<b id="score">0</b></span>
+                <span>时间：<b id="timeLeft">30</b>s</span>
+                <span>命中：<b id="hits">0</b></span>
+                <span>连击：<b id="comboStat">0</b></span>
+                <span>准确率：<b id="accuracy">0%</b></span>
+              </div>
+            </div>
+            <div class="arena" id="arena">
+              <div class="face-reticle" id="faceReticle"></div>
+            </div>
+          </div>
+
+          <div class="panel rank-panel">
+            <h3>SQLite排行榜</h3>
+            <button class="secondary" id="refreshRank">刷新排名</button>
+            <div class="rank-list" id="rankList"></div>
+            <p class="rank-meta" id="rankMeta">排行榜显示最高分。若同名用户再次游玩但分数更低，数据库会保留旧最高分。</p>
+          </div>
+
+          <div class="panel certificate-panel" id="certificateArea">
+            <h3>最终认证证书</h3>
+            <div class="certificate" id="certificate">
+              <h3>宇宙精神状态认证证书</h3>
+              <div class="cert-row"><span>申请人</span><b id="certName">未填写</b></div>
+              <div class="cert-row"><span>检测官</span><b>AI佳小乐</b></div>
+              <div class="cert-row"><span>抽象等级</span><b>SSR+</b></div>
+              <div class="cert-row"><span>颜值等级</span><b>∞</b></div>
+              <div class="cert-row"><span>发癫等级</span><b>MAX</b></div>
+              <div class="cert-row"><span>认证机构</span><b>国际抽象艺术研究协会</b></div>
+              <div class="cert-row"><span>生成时间</span><b id="certTime">--</b></div>
+            </div>
+            <div class="cert-actions">
+              <button id="makeCert">申请并生成证书</button>
+              <button id="downloadPng" class="secondary">下载PNG</button>
+              <button id="downloadPdf" class="secondary">下载PDF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer style="position:relative;z-index:3;padding:26px clamp(18px,4vw,58px);color:rgba(247,251,255,.58);text-align:center;">
+    Copyright © 2026 拖鞋423-佳小乐开发者.  再此感谢所有支持者，特别是王老八本人！
+  </footer>
+
+  <script>
+    const imageData = {
+      avatar: "assets/mental/avatar.png",
+      labcoat: "assets/mental/labcoat.jpg",
+      wideeye: "assets/mental/wideeye.jpg",
+      call1: "assets/mental/call1.jpg",
+      call2: "assets/mental/call2.jpg",
+      greenmode: "assets/mental/greenmode.jpg"
+    };
+
+    const photos = [
+      { key: "avatar", title: "AI角色：佳小乐", desc: "检测中心首席分析员，看起来很乖，实际很会整活。", cls: "avatar" },
+      { key: "labcoat", title: "白大褂权威形态", desc: "吉林大学限定皮肤：看似科研，实则抽象能量溢出。", cls: "top" },
+      { key: "call1", title: "视频通话失控A", desc: "检测到表情管理模块出现不可逆波动。", cls: "" },
+      { key: "call2", title: "视频通话失控B", desc: "嘴角曲率突破实验室安全阈值。", cls: "" },
+      { key: "greenmode", title: "绿色鬼畜领域", desc: "高浓度抽象辐射现场，请佩戴墨镜观看。", cls: "" },
+      { key: "wideeye", title: "瞳孔地震瞬间", desc: "AI数据库标注：未知但很有精神。", cls: "" }
+    ];
+
+    const roasts = [
+      "AI佳小乐已失去理智，正在申请带薪休假。",
+      "检测到未知精神波形，建议投喂奶茶后重新观察。",
+      "服务器颜值模块崩溃：错误代码 HANDSOME_∞。",
+      "该用户已被收录进抽象图鉴第114514页。",
+      "精神状态领先时代300年，普通人暂时无法加载。",
+      "建议立即送往喜剧学院，别耽误发展。",
+      "当前用户过于离谱，AI佳小乐决定装作没看见。",
+      "王老八能量正在外溢，宿舍门口请保持队形。",
+      "吉林大学数据库回复：这事我们也第一次见。"
+    ];
+    const titles = ["抽象大师", "发癫之王", "宿舍传说", "精神领袖", "宇宙级表情包制造机", "国家一级整活艺术家"];
+    const levels = ["A", "S", "SS", "SSS", "SSR+", "MAX"];
+    const emojis = ["🤣", "😂", "🤡", "💀", "🔥", "👑", "✨", "💥"];
+    const effects = ["shake", "stretch", "squash", "rotate", "glitch", "warp"];
+
+    const carousel = document.getElementById("carousel");
+    const wall = document.getElementById("wall");
+    const counter = document.getElementById("counter");
+    const terminal = document.getElementById("terminal");
+    const bar = document.getElementById("bar");
+    const roulette = document.getElementById("roulette");
+    const roast = document.getElementById("roast");
+    const toast = document.getElementById("toast");
+    const certTime = document.getElementById("certTime");
+    const certName = document.getElementById("certName");
+    const currentUser = document.getElementById("currentUser");
+    const nameModal = document.getElementById("nameModal");
+    const nameInput = document.getElementById("nameInput");
+    const nameHint = document.getElementById("nameHint");
+    const qrModal = document.getElementById("qrModal");
+    const qrImage = document.getElementById("qrImage");
+    const qrFallback = document.getElementById("qrFallback");
+    const arena = document.getElementById("arena");
+    const faceReticle = document.getElementById("faceReticle");
+
+    let active = 0;
+    let clicks = 0;
+    let toastTimer = 0;
+    let bossDone = false;
+    let currentName = localStorage.getItem("aiMentalName") || "";
+    let pendingNameAction = null;
+    let pendingCertAction = null;
+    let gameRunning = false;
+    let score = 0;
+    let hits = 0;
+    let misses = 0;
+    let combo = 0;
+    let timeLeft = 30;
+    let gameTimer = 0;
+    let targetTimer = 0;
+    let targetVisibleAt = 0;
+
+    function syncName() {
+      currentUser.textContent = currentName || "未登录";
+      certName.textContent = currentName || "未填写";
+    }
+
+    function requireName(reason, action) {
+      if (currentName) {
+        action();
+        return;
+      }
+      pendingNameAction = action;
+      nameHint.textContent = reason;
+      nameInput.value = "";
+      nameModal.classList.add("show");
+      setTimeout(() => nameInput.focus(), 50);
+    }
+
+    function confirmName() {
+      const name = nameInput.value.trim();
+      if (!name) {
+        speak("用户名不能为空，AI佳小乐需要一个称呼。");
+        return;
+      }
+      currentName = name.slice(0, 18);
+      localStorage.setItem("aiMentalName", currentName);
+      syncName();
+      nameModal.classList.remove("show");
+      speak(`欢迎 ${currentName}，AI佳小乐已记住你。`);
+      const action = pendingNameAction;
+      pendingNameAction = null;
+      if (action) action();
+    }
+
+    function buildPhotos() {
+      carousel.innerHTML = photos.map((p, i) => `
+        <div class="photo ${p.cls} ${p.key === "avatar" ? "chat-link" : ""} ${i === 0 ? "active" : ""}" data-index="${i}" data-key="${p.key}">
+          <img src="${imageData[p.key]}" alt="${p.title}">
+          <div class="label"><b>${p.title}</b><span>${p.desc}</span></div>
+        </div>
+      `).join("");
+      wall.innerHTML = photos.map((p, i) => `
+        <div class="tile" data-index="${i}">
+          <img src="${imageData[p.key]}" alt="${p.title}">
+          <strong>${i + 1}. ${p.title}</strong>
+        </div>
+      `).join("");
+      document.querySelectorAll(".photo, .tile").forEach(el => {
+        el.addEventListener("click", event => {
+          if (event.target.tagName === "BUTTON") return;
+          if (el.classList.contains("photo") && el.dataset.key === "avatar") {
+            window.location.href = "intro.html?next=chat.html";
+            return;
+          }
+          triggerMadness(Number(el.dataset.index || active), el.classList.contains("photo") ? el : null);
+        });
+      });
+    }
+
+    function setPhoto(index) {
+      active = (index + photos.length) % photos.length;
+      document.querySelectorAll(".photo").forEach((el, i) => el.classList.toggle("active", i === active));
+      counter.textContent = `${String(active + 1).padStart(2, "0")} / ${String(photos.length).padStart(2, "0")}`;
+    }
+
+    function triggerMadness(index, target) {
+      setPhoto(index);
+      clicks += 1;
+      const card = target || document.querySelector(".photo.active");
+      const fx = effects[Math.floor(Math.random() * effects.length)];
+      card.classList.add(fx);
+      setTimeout(() => card.classList.remove(fx), 2600 + Math.random() * 1400);
+      emojiRain(42 + Math.floor(Math.random() * 44));
+      const text = roasts[Math.floor(Math.random() * roasts.length)];
+      roast.textContent = text;
+      speak(text);
+      if (clicks === 10) speak("成就解锁：全校最强表情包");
+      if (clicks === 20) speak("成就解锁：国家一级发癫艺术家");
+      if (clicks === 50) triggerBoss();
+    }
+
+    function speak(text) {
+      clearTimeout(toastTimer);
+      toast.textContent = text;
+      toast.classList.add("show");
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2300);
+    }
+
+    function emojiRain(count) {
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < count; i += 1) {
+        const el = document.createElement("div");
+        el.className = "emoji";
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.left = Math.random() * 100 + "vw";
+        el.style.fontSize = 18 + Math.random() * 34 + "px";
+        el.style.animationDuration = 1.6 + Math.random() * 2.2 + "s";
+        el.style.setProperty("--dx", (Math.random() * 240 - 120) + "px");
+        el.style.setProperty("--rot", (Math.random() * 900 - 450) + "deg");
+        frag.appendChild(el);
+        setTimeout(() => el.remove(), 4300);
+      }
+      document.body.appendChild(frag);
+    }
+
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    function addLine(text) {
+      const line = document.createElement("div");
+      line.textContent = "> " + text;
+      terminal.appendChild(line);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    async function runScan() {
+      terminal.innerHTML = "";
+      bar.style.width = "0%";
+      const steps = [
+        ["AI佳小乐正在扫描脑电波...", "10%", 650],
+        ["正在连接国家精神状态数据库...", "35%", 1200],
+        ["正在同步银河系档案中心...", "67%", 1200],
+        ["正在询问宿舍目击证人...", "99%", 950],
+        ["系统发现异常：进度条已经不服从物理规律。", "114514%", 950],
+        ["检测完成：发现 SSR+ 级抽象人才。", "100%", 600]
+      ];
+      for (const [text, width, delay] of steps) {
+        await wait(delay);
+        addLine(text);
+        bar.style.width = width;
+      }
+      generateIndex(true);
+      emojiRain(64);
+      speak("检测完成：SSR+级抽象人才，建议立即申请证书。");
+    }
+
+    function generateIndex(fromScan = false) {
+      const value = 1000 + Math.floor(Math.random() * 99000);
+      const level = levels[Math.floor(Math.random() * levels.length)];
+      const title = titles[Math.floor(Math.random() * titles.length)];
+      roulette.innerHTML = `<div><b>${value}%</b><span>危险等级：${level}</span><br><span>随机称号：${title}</span></div>`;
+      roast.textContent = roasts[Math.floor(Math.random() * roasts.length)];
+      if (!fromScan) {
+        speak("今日鉴定生成成功：建议保存，方便以后翻旧账。");
+        emojiRain(32);
+      }
+    }
+
+    function startGameFlow() {
+      requireName("开始 FPS 定点测试前，请输入你的排行榜用户名。", startGame);
+    }
+
+    function startGame() {
+      if (gameRunning) return;
+      score = 0; hits = 0; misses = 0; combo = 0; timeLeft = 30; gameRunning = true;
+      updateStats();
+      arena.querySelectorAll(".target, .hit-mark").forEach(el => el.remove());
+      speak(`${currentName} 进入定点测试，AI佳小乐开始计时。`);
+      spawnTarget();
+      targetTimer = setInterval(spawnTarget, 760);
+      gameTimer = setInterval(() => {
+        timeLeft -= 1;
+        if (timeLeft <= 0) endGame();
+        updateStats();
+      }, 1000);
+    }
+
+    function spawnTarget() {
+      if (!gameRunning) return;
+      arena.querySelectorAll(".target").forEach(el => {
+        misses += 1;
+        combo = 0;
+        el.remove();
+      });
+      const rect = arena.getBoundingClientRect();
+      const size = Math.max(42, 78 - Math.min(28, hits * 1.2));
+      const target = document.createElement("button");
+      target.className = "target";
+      target.type = "button";
+      target.setAttribute("aria-label", "测试目标");
+      target.style.setProperty("--size", `${size}px`);
+      target.style.setProperty("--x", `${Math.random() * (rect.width - 90) + 45}px`);
+      target.style.setProperty("--y", `${Math.random() * (rect.height - 90) + 45}px`);
+      targetVisibleAt = performance.now();
+      target.addEventListener("click", event => {
+        event.stopPropagation();
+        if (!gameRunning) return;
+        const reaction = performance.now() - targetVisibleAt;
+        const speedBonus = Math.max(0, Math.round((620 - reaction) / 22));
+        hits += 1;
+        combo += 1;
+        score += 20 + speedBonus + combo * 2;
+        const x = parseFloat(target.style.getPropertyValue("--x"));
+        const y = parseFloat(target.style.getPropertyValue("--y"));
+        target.remove();
+        showHit(x, y, `+${20 + speedBonus + combo * 2}`);
+        updateStats();
+        spawnTarget();
+      });
+      arena.appendChild(target);
+    }
+
+    arena.addEventListener("click", event => {
+      if (!gameRunning || event.target.classList.contains("target")) return;
+      misses += 1;
+      combo = 0;
+      arena.classList.add("firing");
+      setTimeout(() => arena.classList.remove("firing"), 90);
+      updateStats();
+    });
+
+    function moveReticle(clientX, clientY) {
+      const rect = arena.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+      faceReticle.style.setProperty("--reticle-x", `${x}px`);
+      faceReticle.style.setProperty("--reticle-y", `${y}px`);
+    }
+
+    arena.addEventListener("mousemove", event => moveReticle(event.clientX, event.clientY));
+    arena.addEventListener("touchmove", event => {
+      if (!event.touches.length) return;
+      moveReticle(event.touches[0].clientX, event.touches[0].clientY);
+    }, { passive: true });
+    arena.addEventListener("pointerdown", event => {
+      moveReticle(event.clientX, event.clientY);
+      arena.classList.add("firing");
+      setTimeout(() => arena.classList.remove("firing"), 90);
+    });
+
+    function showHit(x, y, text) {
+      const mark = document.createElement("div");
+      mark.className = "hit-mark";
+      mark.textContent = text;
+      mark.style.left = `${x}px`;
+      mark.style.top = `${y}px`;
+      arena.appendChild(mark);
+      setTimeout(() => mark.remove(), 650);
+    }
+
+    async function endGame() {
+      clearInterval(gameTimer);
+      clearInterval(targetTimer);
+      gameRunning = false;
+      arena.querySelectorAll(".target").forEach(el => el.remove());
+      updateStats();
+      await saveScore();
+      speak(`定点测试结束：${score}分，AI佳小乐已更新排行榜。`);
+      emojiRain(70);
+    }
+
+    function getAccuracy() {
+      const total = hits + misses;
+      return total ? Math.round(hits / total * 100) : 0;
+    }
+
+    function updateStats() {
+      document.getElementById("score").textContent = score;
+      document.getElementById("hits").textContent = hits;
+      document.getElementById("timeLeft").textContent = Math.max(timeLeft, 0);
+      document.getElementById("comboStat").textContent = combo;
+      document.getElementById("accuracy").textContent = `${getAccuracy()}%`;
+    }
+
+    async function saveScore() {
+      try {
+        const res = await fetch("/api/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: currentName, score, hits, misses, accuracy: getAccuracy() })
+        });
+        if (!res.ok) throw new Error("保存失败");
+        await loadRanks();
+      } catch (error) {
+        speak("分数保存失败：请确认是通过 node server.mjs 打开的页面。");
+      }
+    }
+
+    async function loadRanks() {
+      const list = document.getElementById("rankList");
+      try {
+        const res = await fetch("/api/scores");
+        if (!res.ok) throw new Error("读取失败");
+        const data = await res.json();
+        list.innerHTML = data.scores.length ? data.scores.map((row, index) => `
+          <div class="rank-row ${row.name === currentName ? "me" : ""}">
+            <b>#${index + 1}</b>
+            <span>${escapeHtml(row.name)}<br><small>命中 ${row.hits} · 失误 ${row.misses} · 命中率 ${row.accuracy}% · ${new Date(row.updated_at).toLocaleString("zh-CN", { hour12: false })}</small></span>
+            <span class="rank-score">${row.score}<small>最高分</small></span>
+          </div>
+        `).join("") : `<div class="rank-row"><b>#</b><span>暂无成绩，先玩一局定点测试。</span><span class="rank-score">0<small>最高分</small></span></div>`;
+      } catch (error) {
+        list.innerHTML = `<div class="rank-row"><b>!</b><span>排行榜需要通过本地服务访问</span><span class="rank-score">--<small>最高分</small></span></div>`;
+      }
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[char]));
+    }
+
+    function openQrForCertificate(afterApprove = null) {
+      requireName("生成认证证书前，请输入证书上的用户名。", () => {
+        pendingCertAction = () => {
+          updateCertificate();
+          if (typeof afterApprove === "function") afterApprove();
+        };
+        qrModal.classList.add("show");
+      });
+    }
+
+    function updateCertificate() {
+      certName.textContent = currentName;
+      certTime.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
+      qrModal.classList.remove("show");
+      speak("认证证书已生成：这下证据确凿了。");
+      emojiRain(42);
+    }
+
+    function drawCertificateCanvas() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1400;
+      canvas.height = 900;
+      const ctx = canvas.getContext("2d");
+      const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      grad.addColorStop(0, "#080b1d");
+      grad.addColorStop(.55, "#171151");
+      grad.addColorStop(1, "#082333");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#ffe56a";
+      ctx.lineWidth = 10;
+      ctx.strokeRect(46, 46, canvas.width - 92, canvas.height - 92);
+      ctx.strokeStyle = "rgba(32,231,255,.58)";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(78, 78, canvas.width - 156, canvas.height - 156);
+      ctx.fillStyle = "rgba(255,255,255,.08)";
+      ctx.font = "900 180px Microsoft YaHei";
+      ctx.save();
+      ctx.translate(950, 730);
+      ctx.rotate(-0.16);
+      ctx.fillText("SSR+", 0, 0);
+      ctx.restore();
+      ctx.fillStyle = "#ffe56a";
+      ctx.textAlign = "center";
+      ctx.font = "900 60px Microsoft YaHei";
+      ctx.fillText("宇宙精神状态认证证书", canvas.width / 2, 150);
+      ctx.fillStyle = "#f8fbff";
+      ctx.font = "700 34px Microsoft YaHei";
+      ctx.fillText("AI佳小乐检测中心 v4.0 出品", canvas.width / 2, 205);
+      const rows = [
+        ["申请人", currentName || "未填写"],
+        ["检测官", "AI佳小乐"],
+        ["抽象等级", "SSR+"],
+        ["颜值等级", "∞"],
+        ["发癫等级", "MAX"],
+        ["认证机构", "国际抽象艺术研究协会"],
+        ["生成时间", certTime.textContent || new Date().toLocaleString("zh-CN", { hour12: false })]
+      ];
+      ctx.textAlign = "left";
+      rows.forEach((row, i) => {
+        const y = 300 + i * 66;
+        ctx.strokeStyle = "rgba(255,255,255,.18)";
+        ctx.beginPath();
+        ctx.moveTo(220, y + 26);
+        ctx.lineTo(1180, y + 26);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(248,251,255,.66)";
+        ctx.font = "700 30px Microsoft YaHei";
+        ctx.fillText(row[0], 240, y);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 34px Microsoft YaHei";
+        ctx.fillText(row[1], 520, y);
+      });
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#20e7ff";
+      ctx.font = "900 34px Microsoft YaHei";
+      ctx.fillText("本证书仅供朋友之间快乐整活，请勿用于严肃场合。", canvas.width / 2, 820);
+      return canvas;
+    }
+
+    function downloadPng() {
+      openQrForCertificate(() => {
+        const canvas = drawCertificateCanvas();
+        const a = document.createElement("a");
+        a.href = canvas.toDataURL("image/png");
+        a.download = `${currentName}-宇宙精神状态认证证书.png`;
+        a.click();
+      });
+    }
+
+    function downloadPdf() {
+      openQrForCertificate(() => {
+        const canvas = drawCertificateCanvas();
+        const dataUrl = canvas.toDataURL("image/jpeg", .92);
+        const pdfBlob = imageToPdf(dataUrl, canvas.width, canvas.height);
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(pdfBlob);
+        a.download = `${currentName}-宇宙精神状态认证证书.pdf`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+    }
+
+    function imageToPdf(jpegDataUrl, width, height) {
+      const binary = atob(jpegDataUrl.split(",")[1]);
+      const objects = [];
+      const add = value => objects.push(value);
+      add("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+      add("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+      add(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`);
+      add(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${width} /Height ${height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${binary.length} >>\nstream\n${binary}\nendstream\nendobj\n`);
+      const contents = `q\n${width} 0 0 ${height} 0 0 cm\n/Im0 Do\nQ\n`;
+      add(`5 0 obj\n<< /Length ${contents.length} >>\nstream\n${contents}endstream\nendobj\n`);
+      let pdf = "%PDF-1.4\n";
+      const offsets = [0];
+      objects.forEach(obj => { offsets.push(pdf.length); pdf += obj; });
+      const xref = pdf.length;
+      pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+      offsets.slice(1).forEach(offset => { pdf += String(offset).padStart(10, "0") + " 00000 n \n"; });
+      pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+      const bytes = new Uint8Array(pdf.length);
+      for (let i = 0; i < pdf.length; i += 1) bytes[i] = pdf.charCodeAt(i) & 0xff;
+      return new Blob([bytes], { type: "application/pdf" });
+    }
+
+    function triggerBoss() {
+      if (bossDone) return;
+      bossDone = true;
+      document.body.classList.add("boss");
+      speak("隐藏模式启动：宇宙抽象之神。");
+      const interval = setInterval(spawnFloater, 260);
+      emojiRain(100);
+      setTimeout(() => {
+        document.body.classList.remove("boss");
+        clearInterval(interval);
+        speak("系统恢复：AI佳小乐假装刚才什么都没发生。");
+      }, 10000);
+    }
+
+    function spawnFloater() {
+      const p = photos[Math.floor(Math.random() * photos.length)];
+      const img = document.createElement("img");
+      img.className = "floater";
+      img.src = imageData[p.key];
+      img.alt = "";
+      img.style.left = Math.random() * 92 + "vw";
+      img.style.top = Math.random() * 82 + "vh";
+      img.style.setProperty("--x", (Math.random() * 500 - 250) + "px");
+      img.style.setProperty("--y", (Math.random() * 500 - 250) + "px");
+      document.body.appendChild(img);
+      setTimeout(() => img.remove(), 2200);
+    }
+
+    function particles() {
+      const canvas = document.getElementById("particles");
+      const ctx = canvas.getContext("2d");
+      let dots = [];
+      function resize() {
+        canvas.width = innerWidth * devicePixelRatio;
+        canvas.height = innerHeight * devicePixelRatio;
+        ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+        dots = Array.from({ length: Math.min(120, Math.floor(innerWidth / 10)) }, () => ({
+          x: Math.random() * innerWidth,
+          y: Math.random() * innerHeight,
+          vx: (Math.random() - .5) * .35,
+          vy: (Math.random() - .5) * .35,
+          r: Math.random() * 2.2 + .6,
+          a: Math.random() * .7 + .2
+        }));
+      }
+      function draw() {
+        ctx.clearRect(0, 0, innerWidth, innerHeight);
+        dots.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < -20) p.x = innerWidth + 20;
+          if (p.x > innerWidth + 20) p.x = -20;
+          if (p.y < -20) p.y = innerHeight + 20;
+          if (p.y > innerHeight + 20) p.y = -20;
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(255,255,255,${p.a})`;
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = "#20e7ff";
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.shadowBlur = 0;
+        requestAnimationFrame(draw);
+      }
+      resize();
+      addEventListener("resize", resize);
+      draw();
+    }
+
+    qrImage.addEventListener("load", () => { qrImage.style.display = "block"; qrFallback.style.display = "none"; });
+    qrImage.addEventListener("error", () => { qrImage.style.display = "none"; qrFallback.style.display = "grid"; });
+    document.getElementById("prevPhoto").addEventListener("click", e => { e.stopPropagation(); setPhoto(active - 1); });
+    document.getElementById("nextPhoto").addEventListener("click", e => { e.stopPropagation(); setPhoto(active + 1); });
+    document.getElementById("startScan").addEventListener("click", runScan);
+    document.getElementById("scanAgain").addEventListener("click", runScan);
+    document.getElementById("randomize").addEventListener("click", () => generateIndex(false));
+    document.getElementById("startGame").addEventListener("click", startGameFlow);
+    document.getElementById("refreshRank").addEventListener("click", loadRanks);
+    document.getElementById("makeCert").addEventListener("click", openQrForCertificate);
+    document.getElementById("certShortcut").addEventListener("click", openQrForCertificate);
+    document.getElementById("downloadPng").addEventListener("click", downloadPng);
+    document.getElementById("downloadPdf").addEventListener("click", downloadPdf);
+    document.getElementById("switchUser").addEventListener("click", () => {
+      currentName = "";
+      localStorage.removeItem("aiMentalName");
+      syncName();
+      requireName("输入新的用户名，后续测试和证书都会使用它。", () => {});
+    });
+    document.getElementById("nameConfirm").addEventListener("click", confirmName);
+    document.getElementById("nameCancel").addEventListener("click", () => { nameModal.classList.remove("show"); pendingNameAction = null; });
+    nameInput.addEventListener("keydown", event => { if (event.key === "Enter") confirmName(); });
+    document.getElementById("qrApprove").addEventListener("click", () => { if (pendingCertAction) pendingCertAction(); pendingCertAction = null; });
+    document.getElementById("qrClose").addEventListener("click", () => { qrModal.classList.remove("show"); pendingCertAction = null; });
+
+    buildPhotos();
+    particles();
+    syncName();
+    certTime.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
+    loadRanks();
+    setInterval(() => setPhoto(active + 1), 2000);
+    setTimeout(triggerBoss, 30000);
+  </script>
+</body>
+</html>

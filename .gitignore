@@ -1,0 +1,78 @@
+# 运行日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+
+# 进程缓存
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 依赖包目录
+node_modules/
+jspm_packages/
+
+# 编译打包产物
+dist/
+build/
+out/
+output/
+*.tsbuildinfo
+coverage/
+.nyc_output
+
+# 环境变量配置
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+*.env
+
+# 工具缓存
+.npm
+.eslintcache
+.parcel-cache
+.next/
+.nuxt/
+.turbo
+
+# IDE 编辑器文件
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# JetBrains IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+# Sublime
+*.sublime-project
+*.sublime-workspace
+# Vim临时文件
+*.swp
+*.swo
+
+# 系统杂项文件
+.DS_Store
+Thumbs.db
+
+# 排除 yaml、models 文件（需求指定不忽略）
+# 下面这两行注释代表：不屏蔽 *.yaml *.yml / models 文件夹，不会加入忽略清单
+*.yaml
+*.yml
+node_modules/
