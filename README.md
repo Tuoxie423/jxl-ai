@@ -9,7 +9,9 @@ JXL-AI 是一个基于 Node.js 的互动 Web 应用，提供 AI 聊天机器人�
 
 首页：
 
-![index](D:\Golang\Project\claude\tuoxie.asia\jxl\media\index.png)
+![index](media\index.png)
+
+
 
 ## 网址
 
@@ -24,11 +26,15 @@ JXL-AI 是一个基于 Node.js 的互动 Web 应用，提供 AI 聊天机器人�
 
 - **AI 聊天** - 与 AI 角色进行实时对话互动
 
-  ![](D:\Golang\Project\claude\tuoxie.asia\jxl\media\chat.gif)
+  ![chat](media\chat.gif)
 
-- **图像上传** - 上传一些搞怪图片
 
-  ![upload](D:\Golang\Project\claude\tuoxie.asia\jxl\media\upload.png)
+
+- **图像上传** - 上传一些搞怪抽象图片
+
+  ![upload](media\upload.png)
+
+
 
 - **证书发放** - 整活证书生成 
 
