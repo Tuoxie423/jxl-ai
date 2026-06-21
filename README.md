@@ -5,18 +5,33 @@
 
 ## 项目简介
 
-JXL-AI 是一个基于 Node.js 的互动 Web 应用，提供 AI 聊天机器人、图像识别与生成、互动游戏等功能。项目包含多个页面模块，可以与 AI 角色进行对话互动，体验有趣的 AI 功能。
+JXL-AI 是一个基于 Node.js 的互动 Web 应用，提供 AI 聊天机器人、投稿图像、互动游戏等功能。项目包含多个页面模块，可以与 AI 角色进行对话互动，体验有趣的 AI 功能。
+
+首页：
+
+![index](D:\Golang\Project\claude\tuoxie.asia\jxl\media\index.png)
 
 ## 网址
 
 [点击访问](https://tuoxie.asia/)
 链接：https://tuoxie.asia/
 
+
+
+
+
 ## 功能特性
 
 - **AI 聊天** - 与 AI 角色进行实时对话互动
-- **图像上传**
-- **角色展示** - 查看和管理不同的 AI 角色
+
+  ![](D:\Golang\Project\claude\tuoxie.asia\jxl\media\chat.gif)
+
+- **图像上传** - 上传一些搞怪图片
+
+  ![upload](D:\Golang\Project\claude\tuoxie.asia\jxl\media\upload.png)
+
+- **证书发放** - 整活证书生成 
+
 - **互动游戏** - 包含瞄准游戏等多种趣味互动
 
 ## 技术栈
@@ -62,9 +77,9 @@ node server.mjs
 
 | 页面 | 路径 | 功能描述 |
 |------|------|----------|
-| 首页 | `/` |
+| 首页 | `/` |首页|
 | 聊天 | `/chat.html` | 与 AI 角色对话 |
-| 介绍 | `/intro.html` | 角色介绍动画 |
+| 动画 | `/intro.html` | 角色欢迎动画 |
 | 图鉴 | `/bestiary.html` | 上传图像并展示 |
 
 ## 配置说明
