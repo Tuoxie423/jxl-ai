@@ -9,7 +9,7 @@ JXL-AI 是一个基于 Node.js 的互动 Web 应用，提供 AI 聊天机器人�
 
 首页：
 
-![index](.\media\index.png)
+![index](./media/index.png)
 
 
 
@@ -26,13 +26,13 @@ JXL-AI 是一个基于 Node.js 的互动 Web 应用，提供 AI 聊天机器人�
 
 - **AI 聊天** - 与 AI 角色进行实时对话互动
 
-  ![chat](.\media\chat.gif)
+  ![chat](./media/chat.gif)
 
 
 
 - **图像上传** - 上传一些搞怪抽象图片
 
-  ![upload](.\media\upload.png)
+  ![upload](./media/upload.png)
 
 
 
