@@ -83,7 +83,6 @@ const listSubmissions = db.prepare(`
 
 const seedImages = [
   { title: "AI角色：佳小乐", url: "/assets/mental/avatar.png", created_at: "seed" },
-  { title: "白大褂权威形态", url: "/assets/mental/labcoat.jpg", created_at: "seed" },
   { title: "视频通话失控A", url: "/assets/mental/call1.jpg", created_at: "seed" },
   { title: "视频通话失控B", url: "/assets/mental/call2.jpg", created_at: "seed" },
   { title: "绿色鬼畜领域", url: "/assets/mental/greenmode.jpg", created_at: "seed" },
