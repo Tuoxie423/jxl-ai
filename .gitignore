@@ -75,3 +75,4 @@ Thumbs.db
 *.yml
 .agents/
 node_modules/
+blog/
