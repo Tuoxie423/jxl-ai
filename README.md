@@ -101,9 +101,7 @@ node server.mjs
 - multer - 文件上传处理
 - better-sqlite3 - SQLite 数据库
 
-## 许可证
 
-MIT License
 
 ## 作者
 
